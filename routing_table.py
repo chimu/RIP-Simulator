@@ -34,7 +34,7 @@ class RoutingTable:
 		    self.routes.remove(r)
 		    self.routes.append(route)
 		    
-		    if route.sender == r.sender and route.metric == Route.inf:
+		    if route.sender == r.sender and route.metric == Route.inf and r.metric != Route.inf:
 			receivedDestDown = True
 	    
 	if not haveRoute:
