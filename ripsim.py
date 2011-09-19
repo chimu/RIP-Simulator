@@ -3,6 +3,7 @@
 import ConfigParser, sys, socket, time, select, packets, routing_table
 from route import Route
 
+#Default period and timeout
 updatePeriod = 30
 timeout = 180
 
@@ -62,7 +63,6 @@ else:
       config.read(configfile)
 
       myId = config.getint('RIP', 'router-id')
-      #boganname = config.get('RIP', 'bogan-name')
       
       updatePeriod = 30;
       
@@ -100,25 +100,29 @@ else:
       print "I am", myId
       print "I listen on:", inputports
       print "I connect to:", outputports
-             
+      
+      #Create input ports for listening on
       for port in inputports:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.bind(('127.0.0.1', int(port)))
-        
-        insockets.append(sock)
+	    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	    sock.bind(('127.0.0.1', int(port)))
+	    
+	    insockets.append(sock)
         
       routingTable.printTable()
       
+      #Send update request
       sendRequest(myId, routingTable.routes)
             
       while True:
  
+	    #Send updates to all attached routers
 	    sendUpdate(myId, routingTable.getRoutes())
 
             starttime = time.time()
             blockduration = 0
             
             while blockduration < updatePeriod:
+		#Wait for inputs to be ready
 		readyInputs, [], [] = select.select(insockets, [], [], updatePeriod)
 		
 		triggeredUpdateRequired = False
@@ -126,34 +130,40 @@ else:
 		for insock in readyInputs:
 		    inmessage = insock.recv(1024)
 		    
+		    #Interpret input data as a RIP packet
 		    inPacket = packets.RIPPacket(inmessage)
 		    
 		    #print "COMMAND:", inPacket.command
 		    
+		    #Check the command of the RIP Packet
 		    if inPacket.command == packets.COMMAND_REQUEST:
+			#A router has requested an update, so we send them our routing table in full
 			print "REQUEST RECEIVED FROM", inPacket.routerId
 			sendUpdate(myId, routingTable.getRoutes(), inPacket.routerId)
 		    else:
 		    
-			#inPacket = packets.UpdatePacket(inmessage)
-			#print inmessage
-			#get routes from received data
+			#Get routes from received data
 			for route in inPacket.getRoutes():
 				newOutport = getOutputPortTo(route.sender)
-				#figure out the metric of the new route
+				#Figure out the metric of the new route
 				newMetric = min(int(route.metric) + int(getMetricTo(route.sender)), 16) 
 				route = Route(route.dest, route.sender, newOutport, newMetric)
 				triggeredUpdateRequired |= routingTable.processRoute(route)
 
+		#Check neighbours for timeouts
 		newDeadNeighbours = routingTable.checkNeighbours(timeout)
 		if newDeadNeighbours:
+		    #A neighbour has died so we send a triggered update
 		    print "DEAD NEIGHBOURS"
 		    triggeredUpdateRequired = True
 		
 		if triggeredUpdateRequired:
+		    #Something has caused a triggered update to be required, so we send one
 		    print "TRIGGERED UPDATE"
 		    sendUpdate(myId, routingTable.getRoutes())
 		
+		
+		#Print the routing table
 		print
 		print "I am", myId
 		print "My neighbours are", routingTable.getNeighbours(), ", my ex-neighbours are", routingTable.getDeadNeighbours()

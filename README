@@ -1,0 +1,36 @@
+--- RIP Simulator ---
+
+    - Running -
+
+      For each RIP router you wish to simulate, create a new terminal window and run
+
+	    ./ripsim.py <routerfile>
+	    
+      For example to simulate the router described in christchurch.cfg:
+
+	    ./ripsim.py nzrouters/christchurch.cfg
+      
+      
+    - Configuration format -
+    
+     The configuration file must begin with the header [RIP]
+     The following options are mandatory:
+	    router-id: The Router id of the suimulated router
+	    input-ports: A comma delimited list of ports the router listens on
+	    output-ports: A comma delimited list of routers the router sends to, in the format
+			  <dest_port-dest_router_id-link_metric> for example '4003-2-1, 4010-5-1' 
+	    update-interval: The period in seconds between the sending of update packets
+	    neighbour-timeout: The time in seconds since the last received packet from a neighbour
+			       after which the neighbour is assumed to be down
+			       
+			       
+      For example:
+	    
+	    [RIP]
+	    router-id: 1
+	    input-ports: 4001, 4002
+	    output-ports: 4003-2-1, 4010-5-1 
+	    update-interval: 30
+	    neighbour-timeout: 180
+
+
