@@ -10,6 +10,8 @@
 
 	    ./ripsim.py nzrouters/christchurch.cfg
       
+      Included are 3 router configuration sets: bogans, nzrouters, and routers. 'nzrouters'
+      is the set of routers that were given on the routing problem sheet.
       
     - Configuration format -
     
